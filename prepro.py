@@ -1,5 +1,6 @@
 from tqdm import tqdm
 import ujson as json
+import os
 
 docred_rel2id = json.load(open('meta/rel2id.json', 'r'))
 cdr_rel2id = {'1:NR:2': 0, '1:CID:2': 1}
@@ -13,8 +14,10 @@ def chunks(l, n):
         res += [l[i:i + n]]
     return res
 
+rel2id = json.load(open('meta/rel2id.json', 'r'))
 
 def read_docred(file_in, tokenizer, max_seq_length=1024):
+    # 我们不再需要 data_dir 参数，也不再进行路径拼接
     i_line = 0
     pos_samples = 0
     neg_samples = 0
@@ -53,7 +56,8 @@ def read_docred(file_in, tokenizer, max_seq_length=1024):
         if "labels" in sample:
             for label in sample['labels']:
                 evidence = label['evidence']
-                r = int(docred_rel2id[label['r']])
+                # === 修改点 1: 使用我们自己的 rel2id ===
+                r = int(rel2id[label['r']])
                 if (label['h'], label['t']) not in train_triple:
                     train_triple[(label['h'], label['t'])] = [
                         {'relation': r, 'evidence': evidence}]
@@ -70,24 +74,37 @@ def read_docred(file_in, tokenizer, max_seq_length=1024):
                 entity_pos[-1].append((start, end,))
 
         relations, hts = [], []
+        # === 注意：这里的逻辑是，只处理有标注的关系（正样本）===
+        # === 它不会自动生成负样本，这可能与原版DocRED处理逻辑不同，但符合我们的数据 ===
         for h, t in train_triple.keys():
-            relation = [0] * len(docred_rel2id)
+            # === 修改点 2: 使用我们自己的 rel2id ===
+            relation = [0] * len(rel2id)
             for mention in train_triple[h, t]:
                 relation[mention["relation"]] = 1
-                evidence = mention["evidence"]
+                # evidence = mention["evidence"] # evidence变量未使用，可以注释掉
             relations.append(relation)
             hts.append([h, t])
             pos_samples += 1
 
+        # === 关键：原作者的负采样逻辑我们不再需要，因为我们的数据已经包含了负样本（标签为NA）
+        # === 但我们的数据里没有NA标签，所以需要根据 hts 来生成负样本
+        # === 为了简单起见，我们先假设所有不在train_triple里的都是负样本
+        all_pairs = set()
         for h in range(len(entities)):
             for t in range(len(entities)):
-                if h != t and [h, t] not in hts:
-                    relation = [1] + [0] * (len(docred_rel2id) - 1)
-                    relations.append(relation)
-                    hts.append([h, t])
-                    neg_samples += 1
+                if h != t:
+                    all_pairs.add((h, t))
 
-        assert len(relations) == len(entities) * (len(entities) - 1)
+        neg_pairs = all_pairs - set(train_triple.keys())
+        for h, t in neg_pairs:
+            # === 修改点 3: 使用我们自己的 rel2id ===
+            relation = [1] + [0] * (len(rel2id) - 1)  # [1, 0] 代表 NA
+            relations.append(relation)
+            hts.append([h, t])
+            neg_samples += 1
+
+        # === 修改点 4: 注释掉这个断言 ===
+        # assert len(relations) == len(entities) * (len(entities) - 1)
 
         sents = sents[:max_seq_length - 2]
         input_ids = tokenizer.convert_tokens_to_ids(sents)

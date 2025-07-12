@@ -3,7 +3,7 @@ import os
 
 import numpy as np
 import torch
-from apex import amp
+from torch.cuda.amp import autocast, GradScaler
 import ujson as json
 from torch.utils.data import DataLoader
 from transformers import AutoConfig, AutoModel, AutoTokenizer
@@ -35,14 +35,19 @@ def train(args, model, train_features, dev_features, test_features):
                           'entity_pos': batch[3],
                           'hts': batch[4],
                           }
-                outputs = model(**inputs)
-                loss = outputs[0] / args.gradient_accumulation_steps
-                with amp.scale_loss(loss, optimizer) as scaled_loss:
-                    scaled_loss.backward()
+                with autocast():
+                    outputs = model(**inputs)
+                    loss = outputs[0] / args.gradient_accumulation_steps
+                # 使用 scaler 来缩放 loss 并进行反向传播
+                scaler.scale(loss).backward()
                 if step % args.gradient_accumulation_steps == 0:
+                    # 在 scaler.step 之前，需要先 unscale 梯度，然后再裁剪
                     if args.max_grad_norm > 0:
-                        torch.nn.utils.clip_grad_norm_(amp.master_params(optimizer), args.max_grad_norm)
-                    optimizer.step()
+                        scaler.unscale_(optimizer)
+                        torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
+                    # 使用 scaler 来更新优化器和 scaler 自身
+                    scaler.step(optimizer)
+                    scaler.update()
                     scheduler.step()
                     model.zero_grad()
                     num_steps += 1
@@ -67,7 +72,7 @@ def train(args, model, train_features, dev_features, test_features):
     ]
 
     optimizer = AdamW(optimizer_grouped_parameters, lr=args.learning_rate, eps=args.adam_epsilon)
-    model, optimizer = amp.initialize(model, optimizer, opt_level="O1", verbosity=0)
+    scaler = GradScaler()
     num_steps = 0
     set_seed(args)
     model.zero_grad()
@@ -191,12 +196,17 @@ def main():
 
     read = read_docred
 
+    # ==================================================================== #
+    # 最终修正：在这里完成完整的路径拼接，然后只传递一个路径给read函数
+    # ==================================================================== #
     train_file = os.path.join(args.data_dir, args.train_file)
     dev_file = os.path.join(args.data_dir, args.dev_file)
     test_file = os.path.join(args.data_dir, args.test_file)
+
     train_features = read(train_file, tokenizer, max_seq_length=args.max_seq_length)
     dev_features = read(dev_file, tokenizer, max_seq_length=args.max_seq_length)
     test_features = read(test_file, tokenizer, max_seq_length=args.max_seq_length)
+    # ==================================================================== #
 
     model = AutoModel.from_pretrained(
         args.model_name_or_path,
@@ -215,7 +225,7 @@ def main():
     if args.load_path == "":  # Training
         train(args, model, train_features, dev_features, test_features)
     else:  # Testing
-        model = amp.initialize(model, opt_level="O1", verbosity=0)
+        # model = amp.initialize(model, opt_level="O1", verbosity=0)
         model.load_state_dict(torch.load(args.load_path))
         dev_score, dev_output = evaluate(args, model, dev_features, tag="dev")
         print(dev_output)

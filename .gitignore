@@ -3,5 +3,6 @@ models/
 meta/
 apex/
 data/
+dataset/
 *.json
 *.pyc
