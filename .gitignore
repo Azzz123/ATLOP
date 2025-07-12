@@ -1,7 +1,7 @@
-/wandb
-/models
-/meta
-/apex
-/data
+wandb/
+models/
+meta/
+apex/
+data/
 *.json
 *.pyc
