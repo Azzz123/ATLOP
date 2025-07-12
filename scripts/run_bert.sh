@@ -11,6 +11,6 @@ python train.py --data_dir dataset/milcause_bert \
 --learning_rate 5e-5 \
 --max_grad_norm 1.0 \
 --warmup_ratio 0.06 \
---num_train_epochs 30.0 \
+--num_train_epochs 5.0 \
 --seed 66 \
 --num_class 2

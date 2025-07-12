@@ -69,7 +69,12 @@ def official_evaluate(tmp, path):
         os.makedirs(truth_dir)
 
     fact_in_train_annotated = gen_train_facts(os.path.join(path, "train_annotated.json"), truth_dir)
-    fact_in_train_distant = gen_train_facts(os.path.join(path, "train_distant.json"), truth_dir)
+    # ==================================================================== #
+    # 最终修正：我们没有 train_distant.json，所以直接将结果设置为空集合
+    # 这样既避免了文件找不到的错误，也让后续的评估逻辑可以正常运行。
+    # ==================================================================== #
+    fact_in_train_distant = set()
+    # ==================================================================== #
 
     truth = json.load(open(os.path.join(path, "dev.json")))
 
@@ -149,8 +154,12 @@ def official_evaluate(tmp, path):
     else:
         re_f1 = 2.0 * re_p * re_r / (re_p + re_r)
 
-    evi_p = 1.0 * correct_evidence / pred_evi if pred_evi > 0 else 0
-    evi_r = 1.0 * correct_evidence / tot_evidences
+    # ==================================================================== #
+    # 为分母加上一个极小值(epsilon)，防止除以零的错误
+    # ==================================================================== #
+    evi_p = 1.0 * correct_evidence / (pred_evi + 1e-9)
+    evi_r = 1.0 * correct_evidence / (tot_evidences + 1e-9)
+    # ==================================================================== #
     if evi_p + evi_r == 0:
         evi_f1 = 0
     else:

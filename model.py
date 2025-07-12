@@ -37,6 +37,9 @@ class DocREModel(nn.Module):
         n, h, _, c = attention.size()
         hss, tss, rss = [], [], []
         for i in range(len(entity_pos)):
+            # 如果当前文档没有任何关系对，就直接跳过，处理下一个
+            if len(hts[i]) == 0:
+                continue
             entity_embs, entity_atts = [], []
             for e in entity_pos[i]:
                 if len(e) > 1:
