@@ -19,7 +19,9 @@ def to_official(preds, features):
     res = []
     for i in range(preds.shape[0]):
         pred = preds[i]
-        pred = np.nonzero(pred)[0].tolist()
+        # pred 现在是概率值，我们使用0.5作为阈值
+        pred_indices = np.where(pred > 0.5)[0]
+        pred = pred_indices.tolist()
         for p in pred:
             if p != 0:
                 res.append(
@@ -68,8 +70,13 @@ def official_evaluate(tmp, path):
     if not os.path.exists(truth_dir):
         os.makedirs(truth_dir)
 
-    fact_in_train_annotated = gen_train_facts(os.path.join(path, "train_annotated.json"), truth_dir)
-    fact_in_train_distant = gen_train_facts(os.path.join(path, "train_distant.json"), truth_dir)
+    fact_in_train_annotated = gen_train_facts(os.path.join(path, "train.json"), truth_dir)
+    # ==================================================================== #
+    # 最终修正：我们没有 train_distant.json，所以直接将结果设置为空集合
+    # 这样既避免了文件找不到的错误，也让后续的评估逻辑可以正常运行。
+    # ==================================================================== #
+    fact_in_train_distant = set()
+    # ==================================================================== #
 
     truth = json.load(open(os.path.join(path, "dev.json")))
 
@@ -149,8 +156,12 @@ def official_evaluate(tmp, path):
     else:
         re_f1 = 2.0 * re_p * re_r / (re_p + re_r)
 
-    evi_p = 1.0 * correct_evidence / pred_evi if pred_evi > 0 else 0
-    evi_r = 1.0 * correct_evidence / tot_evidences
+    # ==================================================================== #
+    # 为分母加上一个极小值(epsilon)，防止除以零的错误
+    # ==================================================================== #
+    evi_p = 1.0 * correct_evidence / (pred_evi + 1e-9)
+    evi_r = 1.0 * correct_evidence / (tot_evidences + 1e-9)
+    # ==================================================================== #
     if evi_p + evi_r == 0:
         evi_f1 = 0
     else:
@@ -169,4 +180,4 @@ def official_evaluate(tmp, path):
     else:
         re_f1_ignore_train = 2.0 * re_p_ignore_train * re_r / (re_p_ignore_train + re_r)
 
-    return re_f1, evi_f1, re_f1_ignore_train_annotated, re_f1_ignore_train
+    return re_f1, re_p, re_r, re_f1_ignore_train_annotated

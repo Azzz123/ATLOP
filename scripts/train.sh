@@ -1,0 +1,16 @@
+python train.py \
+    --data_dir dataset/milcause_roberta \
+    --output_dir output/chinese-roberta-wwm-ext \
+    --transformer_type roberta \
+    --model_name_or_path models/chinese-roberta-wwm-ext \
+    --train_batch_size 64 \
+    --test_batch_size 64 \
+    --gradient_accumulation_steps 2 \
+    --learning_rate 5e-5 \
+    --max_grad_norm 1.0 \
+    --warmup_ratio 0.06 \
+    --num_train_epochs 3.0 \
+    --seed 66 \
+    --num_class 2 \
+    --num_labels 1 \
+    --log_steps 2

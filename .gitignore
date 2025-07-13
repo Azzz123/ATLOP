@@ -1,8 +1,14 @@
+__pycache__/
 wandb/
 models/
 meta/
 apex/
 data/
 dataset/
-*.json
+# 1. 忽略 output 目录下的所有内容
+output/**/*
+# 2. 豁免所有 .txt 文件
+!output/**/*.txt
+result.json
 *.pyc
+.idea/
