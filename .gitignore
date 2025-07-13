@@ -4,6 +4,13 @@ meta/
 apex/
 data/
 dataset/
-output/
+# 1. 忽略 output 目录下的所有内容
+output/**
+
+# 2. 豁免所有 .txt 文件
+!output/**/*.txt
+
+# 3. 豁免所有子目录，以便 Git 能深入查找 .txt 文件
+!output/**/
 *.json
 *.pyc

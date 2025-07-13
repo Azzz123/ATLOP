@@ -1,0 +1,16 @@
+python train.py \
+    --data_dir dataset/milcause_bert \
+    --output_dir output/bert_base_chinese \
+    --transformer_type bert \
+    --model_name_or_path models/bert-base-chinese \
+    --train_batch_size 128 \
+    --test_batch_size 128 \
+    --gradient_accumulation_steps 2 \
+    --learning_rate 5e-5 \
+    --max_grad_norm 1.0 \
+    --warmup_ratio 0.06 \
+    --num_train_epochs 3.0 \
+    --seed 66 \
+    --num_class 2 \
+    --num_labels 1 \
+    --log_steps 1
