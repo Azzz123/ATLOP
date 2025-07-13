@@ -11,3 +11,4 @@ output/**/*
 !output/**/*.txt
 result.json
 *.pyc
+.idea/
