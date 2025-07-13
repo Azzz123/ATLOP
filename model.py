@@ -106,6 +106,7 @@ class DocREModel(nn.Module):
         logits = self.bilinear(bl)
 
         output = (self.loss_fnt.get_label(logits, num_labels=self.num_labels),)
+
         if labels is not None:
             labels = [torch.tensor(label) for label in labels]
             labels = torch.cat(labels, dim=0).to(logits)
