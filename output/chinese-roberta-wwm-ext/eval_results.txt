@@ -1,0 +1,28 @@
+***** Eval results on dev : epoch 0 *****
+  dev_Precision = 91.10807113543092
+  dev_Recall = 53.536977491961416
+  dev_F1 = 67.44303797468353
+  dev_F1_ign = 67.15410650935875
+
+
+***** Eval results on dev : epoch 1 *****
+  dev_Precision = 91.64619164619164
+  dev_Recall = 89.95176848874597
+  dev_F1 = 90.79107505070995
+  dev_F1_ign = 90.34203068524317
+
+
+***** Eval results on dev : epoch 2 *****
+  dev_Precision = 92.32673267326733
+  dev_Recall = 89.95176848874597
+  dev_F1 = 91.12377850162868
+  dev_F1_ign = 90.7034936836947
+
+
+***** Final Eval results on test *****
+  test_Precision = 66.42335766423358
+  test_Recall = 43.89067524115756
+  test_F1 = 52.85575992255567
+  test_F1_ign = 52.09196230625677
+
+
