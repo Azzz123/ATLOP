@@ -9,6 +9,7 @@ dataset/
 output/**/*
 # 2. 豁免所有 .txt 文件
 !output/**/*.txt
+!output/**/.gitkeep
 result.json
 *.pyc
 .idea/
