@@ -4,5 +4,6 @@ meta/
 apex/
 data/
 dataset/
+output/
 *.json
 *.pyc
